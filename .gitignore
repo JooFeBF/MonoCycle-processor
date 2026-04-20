@@ -1,0 +1,33 @@
+# Build and simulation artifacts
+/db/
+/incremental_db/
+/output_files/
+/sim_build/
+*.sof
+*.pof
+*.jdi
+*.pin
+*.done
+*.qws
+*.rpt
+*.summary
+*.qmsg
+*.rdb
+*.hdb
+*.cdb
+*.logdb
+*.mif
+
+# Python / Simulation
+__pycache__/
+*.pyc
+.venv/
+env/
+results.xml
+
+# OS generated
+.DS_Store
+
+# Logs
+*.dump
+*.log
