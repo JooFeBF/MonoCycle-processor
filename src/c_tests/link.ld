@@ -1,7 +1,6 @@
 MEMORY
 {
-  IMEM (rx) : ORIGIN = 0x00000000, LENGTH = 4K   /* 1024 words */
-  DMEM (rw) : ORIGIN = 0x00000000, LENGTH = 4K   /* 1024 words */
+  RAM (rwx) : ORIGIN = 0x00000000, LENGTH = 512   /* 128 words */
 }
 
 SECTIONS
@@ -10,11 +9,14 @@ SECTIONS
     *(.text.init)
     *(.text*)
     *(.rodata*)
-  } > IMEM
+  } > RAM
 
   .data : {
     *(.data*)
     *(.sdata*)
+  } > RAM
+
+  .bss : {
     *(.bss*)
-  } > DMEM
+  } > RAM
 }

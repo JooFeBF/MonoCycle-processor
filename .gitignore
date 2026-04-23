@@ -31,3 +31,20 @@ results.xml
 # Logs
 *.dump
 *.log
+
+# Python/Pytest
+.pytest_cache/
+
+# Generated Hex files for memory initialization
+*.hex
+
+# HDL Checker
+.hdl_checker/
+
+# Quartus/Altera specific text dumps
+c5_pin_model_dump.txt
+
+
+# RISC-V Compiled Executables
+*.elf
+*.bin

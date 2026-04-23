@@ -18,16 +18,16 @@ module top_level(
 
   pc pc_inst(
     .clk(clk),
-    .rst(~rst_n),      
+    .rst(~rst_n),
     .next_pc(next_pc),
-    .pc_out(address)   
+    .pc_out(address)
   );
 
   logic [31:0] instr;
 
   instruction_memory imem_inst (
     .clk(clk),
-    .address(address),      
+    .address(address),
     .instruction(instr)
   );
 
@@ -39,7 +39,7 @@ module top_level(
   logic [6:0] opcode; assign opcode = instr[6:0];
 
   logic [31:0] imm_extended;
-  logic [2:0] immsrc;  
+  logic [2:0] immsrc;
 
   imm_gen imm_gen_inst (
     .instruction(instr),
@@ -68,7 +68,7 @@ module top_level(
     .branch(branch),
     .jump(jump),
     .branch_type(branch_type),
-    .immsrc_type(immsrc)           
+    .immsrc_type(immsrc)
   );
 
   logic [31:0] rs1_data, rs2_data;
@@ -77,7 +77,7 @@ module top_level(
 
   registers_unit regfile_inst (
     .clk(clk),
-    .rst(~rst_n),      
+    .rst(~rst_n),
     .rs1(rs1),
     .rs2(rs2),
     .rd(rd),
@@ -88,12 +88,22 @@ module top_level(
   );
 
   logic [31:0] ALU_res;
+  logic [31:0] ALU_A;
   logic [31:0] ALU_B;
+
+  always_comb begin
+    if (opcode == 7'b0110111)      // OPC_LUI
+      ALU_A = 32'b0;
+    else if (opcode == 7'b0010111) // OPC_AUIPC
+      ALU_A = address;
+    else
+      ALU_A = rs1_data;
+  end
 
   assign ALU_B = ALU_src ? imm_extended : rs2_data;
 
   alu alu_inst (
-    .operand_a(rs1_data),
+    .operand_a(ALU_A),
     .operand_b(ALU_B),
     .alu_op(ALU_op),
     .alu_result(ALU_res)
@@ -129,14 +139,14 @@ module top_level(
   logic [31:0] selected_value;
   always_comb begin
     case ({sw8, sw7, sw6})
-      3'b000: selected_value = address;           
-      3'b001: selected_value = instr;             
-      3'b010: selected_value = rs1_data;          
-      3'b011: selected_value = rs2_data;          
-      3'b100: selected_value = imm_extended;      
-      3'b101: selected_value = ALU_res;           
-      3'b110: selected_value = mem_data;          
-      3'b111: selected_value = {27'b0, rd};       
+      3'b000: selected_value = address;
+      3'b001: selected_value = instr;
+      3'b010: selected_value = rs1_data;
+      3'b011: selected_value = rs2_data;
+      3'b100: selected_value = imm_extended;
+      3'b101: selected_value = ALU_res;
+      3'b110: selected_value = mem_data;
+      3'b111: selected_value = {27'b0, rd};
       default: selected_value = 32'b0;
     endcase
   end
