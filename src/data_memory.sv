@@ -71,25 +71,26 @@ module data_memory (
     always_ff @(posedge clk) begin
         if (mem_write) begin
             case (DMCTRL)
-                3'b000, 3'b100: begin
+                3'b000, 3'b100: begin // Store Byte
                     case (byte_offset)
-                        2'b00: memory[word_addr][7:0]   <= DMWR[7:0];
-                        2'b01: memory[word_addr][15:8]  <= DMWR[7:0];
-                        2'b10: memory[word_addr][23:16] <= DMWR[7:0];
-                        2'b11: memory[word_addr][31:24] <= DMWR[7:0];
+                        2'b00: memory[word_addr] <= {memory[word_addr][31:8], DMWR[7:0]};
+                        2'b01: memory[word_addr] <= {memory[word_addr][31:16], DMWR[7:0], memory[word_addr][7:0]};
+                        2'b10: memory[word_addr] <= {memory[word_addr][31:24], DMWR[7:0], memory[word_addr][15:0]};
+                        2'b11: memory[word_addr] <= {DMWR[7:0], memory[word_addr][23:0]};
                     endcase
                 end
 
-                3'b001, 3'b101: begin
+                3'b001, 3'b101: begin // Store Halfword
                     case (byte_offset[1])
-                        1'b0: memory[word_addr][15:0]  <= DMWR[15:0];
-                        1'b1: memory[word_addr][31:16] <= DMWR[15:0];
+                        1'b0: memory[word_addr] <= {memory[word_addr][31:16], DMWR[15:0]};
+                        1'b1: memory[word_addr] <= {DMWR[15:0], memory[word_addr][15:0]};
                     endcase
                 end
 
-                3'b010: begin
+                3'b010: begin // Store Word
                     memory[word_addr] <= DMWR;
                 end
+                
                 default: begin
                 end
             endcase
