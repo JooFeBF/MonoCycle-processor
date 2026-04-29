@@ -3,21 +3,30 @@
 module top_level(
   input  logic       clk,
   input  logic       rst_n,
-  input  logic       sw9,
-  input  logic       sw8,
-  input  logic       sw7,
-  input  logic       sw6,
-  output logic [6:0] displayA,
-  output logic [6:0] displayB,
-  output logic [6:0] displayC,
-  output logic [6:0] displayD
+  input  logic       CLOCK_50,
+  output logic [7:0] VGA_R,
+  output logic [7:0] VGA_G,
+  output logic [7:0] VGA_B,
+  output logic       VGA_HS,
+  output logic       VGA_VS,
+  output logic       VGA_CLK,
+  output logic       VGA_BLANK_N,
+  output logic       VGA_SYNC_N
 );
+
+  wire cpu_clk;
+  logic clk_q1, clk_q2;
+  always_ff @(posedge CLOCK_50) begin
+    clk_q1 <= clk;
+    clk_q2 <= clk_q1;
+  end
+  assign cpu_clk = clk_q1 & ~clk_q2;
 
   logic [31:0] next_pc;
   logic [31:0] address;
 
   pc pc_inst(
-    .clk(clk),
+    .clk(cpu_clk),
     .rst(~rst_n),
     .next_pc(next_pc),
     .pc_out(address)
@@ -26,7 +35,7 @@ module top_level(
   logic [31:0] instr;
 
   instruction_memory imem_inst (
-    .clk(clk),
+    .clk(cpu_clk),
     .address(address),
     .instruction(instr)
   );
@@ -76,7 +85,7 @@ module top_level(
   logic [31:0] data_wr;   assign data_wr = jump ? pc_plus_4 : (mem_to_reg ? mem_data : ALU_res);
 
   registers_unit regfile_inst (
-    .clk(clk),
+    .clk(cpu_clk),
     .rst(~rst_n),
     .rs1(rs1),
     .rs2(rs2),
@@ -128,7 +137,7 @@ module top_level(
   logic [31:0] mem_data;
 
   data_memory dmem_inst (
-    .clk(clk),
+    .clk(cpu_clk),
     .address(ALU_res),
     .DMWR(rs2_data),
     .DMCTRL(funct3),
@@ -136,26 +145,62 @@ module top_level(
     .Datard(mem_data)
   );
 
-  logic [31:0] selected_value;
-  always_comb begin
-    case ({sw8, sw7, sw6})
-      3'b000: selected_value = address;
-      3'b001: selected_value = instr;
-      3'b010: selected_value = rs1_data;
-      3'b011: selected_value = rs2_data;
-      3'b100: selected_value = imm_extended;
-      3'b101: selected_value = ALU_res;
-      3'b110: selected_value = mem_data;
-      3'b111: selected_value = {27'b0, rd};
-      default: selected_value = 32'b0;
-    endcase
+  logic clk_25mhz;
+  always_ff @(posedge CLOCK_50 or negedge rst_n) begin
+    if (!rst_n)
+      clk_25mhz <= 1'b0;
+    else
+      clk_25mhz <= ~clk_25mhz;
   end
 
-  logic [15:0] value_to_display; assign value_to_display = sw9 ? selected_value[31:16] : selected_value[15:0];
+  logic video_on;
+  logic [9:0] pixel_x, pixel_y;
 
-  hex7seg display0(.val(value_to_display[3:0]),   .display(displayA));
-  hex7seg display1(.val(value_to_display[7:4]),   .display(displayB));
-  hex7seg display2(.val(value_to_display[11:8]),  .display(displayC));
-  hex7seg display3(.val(value_to_display[15:12]), .display(displayD));
+  assign VGA_CLK = clk_25mhz;
+  assign VGA_SYNC_N = 1'b0;
+  assign VGA_BLANK_N = video_on;
+
+  vga_sync vga_sync_inst (
+    .clk_25mhz(clk_25mhz),
+    .rst_n(rst_n),
+    .hsync(VGA_HS),
+    .vsync(VGA_VS),
+    .video_on(video_on),
+    .pixel_x(pixel_x),
+    .pixel_y(pixel_y)
+  );
+
+  vga_text_controller vga_text_controller_inst (
+    .clk_25mhz(clk_25mhz),
+    .video_on(video_on),
+    .pixel_x(pixel_x),
+    .pixel_y(pixel_y),
+    .address(address),
+    .next_pc(next_pc),
+    .instr(instr),
+    .opcode(opcode),
+    .funct3(funct3),
+    .funct7(funct7),
+    .imm_extended(imm_extended),
+    .rs1(rs1),
+    .rs1_data(rs1_data),
+    .rs2(rs2),
+    .rs2_data(rs2_data),
+    .rd(rd),
+    .ALU_A(ALU_A),
+    .ALU_B(ALU_B),
+    .ALU_res(ALU_res),
+    .branch_taken(branch_taken),
+    .jump(jump),
+    .mem_data(mem_data),
+    .mem_write(mem_write),
+    .reg_write(reg_write),
+    .ALU_src(ALU_src),
+    .mem_to_reg(mem_to_reg),
+    .data_wr(data_wr),
+    .VGA_R(VGA_R),
+    .VGA_G(VGA_G),
+    .VGA_B(VGA_B)
+  );
 
 endmodule

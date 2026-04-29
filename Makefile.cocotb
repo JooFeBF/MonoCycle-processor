@@ -1,7 +1,20 @@
 SIM ?= verilator
 TOPLEVEL_LANG ?= verilog
 PWD=$(shell pwd)
-VERILOG_SOURCES += $(PWD)/src/rv_config_pkg.sv                    $(PWD)/src/rv_opcodes_pkg.sv                    $(PWD)/src/alu.sv                    $(PWD)/src/branch_unit.sv                    $(PWD)/src/control_unit.sv                    $(PWD)/src/data_memory.sv                    $(PWD)/src/hex7seg.sv                    $(PWD)/src/imm_gen.sv                    $(PWD)/src/instruction_memory.sv                    $(PWD)/src/pc.sv                    $(PWD)/src/registers_unit.sv                    $(PWD)/src/top_level.sv
+VERILOG_SOURCES += $(PWD)/src/rv_config_pkg.sv \
+                   $(PWD)/src/rv_opcodes_pkg.sv \
+                   $(PWD)/src/alu.sv \
+                   $(PWD)/src/branch_unit.sv \
+                   $(PWD)/src/control_unit.sv \
+                   $(PWD)/src/data_memory.sv \
+                   $(PWD)/src/imm_gen.sv \
+                   $(PWD)/src/instruction_memory.sv \
+                   $(PWD)/src/pc.sv \
+                   $(PWD)/src/registers_unit.sv \
+                   $(PWD)/src/vga_sync.sv \
+                   $(PWD)/src/font_rom.sv \
+                   $(PWD)/src/vga_text_controller.sv \
+                   $(PWD)/src/top_level.sv
 TOPLEVEL = top_level
 MODULE = test_top_level
 include $(shell cocotb-config --makefiles)/Makefile.sim
