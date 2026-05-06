@@ -37,7 +37,7 @@ module vga_text_controller (
 );
 
     logic [6:0] col;
-    logic [5:0] row;
+    logic [4:0] row;
     assign col = pixel_x[9:3];
     assign row = pixel_y[9:4];
 
@@ -52,11 +52,11 @@ module vga_text_controller (
         .data(font_word)
     );
 
-    // Font ROM address: char_code * 16 + row index inside character
+    // Font ROM address: char_code * 16 + row index inside character (16 rows)
     assign rom_addr = {char_code[6:0], pixel_y[3:0]};
 
     logic font_bit;
-    assign font_bit = font_word[~pixel_x[2:0]]; // bits are reversed in typical font roms or we can use 7 - pixel_x[2:0]
+    assign font_bit = font_word[~pixel_x[2:0]]; // 8 pixels wide per character
 
     // Helper functions
     function automatic [7:0] hex2ascii(input [3:0] hex_val);
@@ -124,214 +124,214 @@ module vga_text_controller (
 
     always_comb begin
         char_code = 8'h20; // Default to space
-        
+
         case (row)
-            6'd2: begin
-                // PC Address:  
-                if (col >= 5 && col <= 15) begin
-                    case (col - 5)
-                        0: char_code = "P"; 1: char_code = "C"; 2: char_code = " "; 3: char_code = "A"; 4: char_code = "d"; 5: char_code = "d"; 6: char_code = "r"; 7: char_code = "e"; 8: char_code = "s"; 9: char_code = "s"; 10: char_code = ":";
-                        default: char_code = " ";
+            5'd0: begin
+                if (col <= 4) begin
+                    case (col)
+                        0: char_code = "A"; 1: char_code = "D"; 2: char_code = "D"; 3: char_code = "R"; 4: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 17 && col <= 24) begin
-                    char_code = hex32_char(address, 4'(col - 17));
+                end else if (col >= 6 && col <= 13) begin
+                    char_code = hex32_char(address, 4'(col - 6));
+                end
+
+                if (col >= 40 && col <= 47) begin
+                    case (col - 40)
+                        0: char_code = "N"; 1: char_code = "E"; 2: char_code = "X"; 3: char_code = "T"; 4: char_code = "_"; 5: char_code = "P"; 6: char_code = "C"; 7: char_code = ":"; default: char_code = " ";
+                    endcase
+                end else if (col >= 49 && col <= 56) begin
+                    char_code = hex32_char(next_pc, 4'(col - 49));
                 end
             end
-            
-            6'd3: begin
-                if (col >= 5 && col <= 16) begin
-                    case (col - 5)
-                        0: char_code = "I"; 1: char_code = "n"; 2: char_code = "s"; 3: char_code = "t"; 4: char_code = "r"; 5: char_code = "u"; 6: char_code = "c"; 7: char_code = "t"; 8: char_code = "i"; 9: char_code = "o"; 10: char_code = "n"; 11: char_code = ":";
-                        default: char_code = " ";
+
+            5'd1: begin
+                if (col <= 5) begin
+                    case (col)
+                        0: char_code = "I"; 1: char_code = "N"; 2: char_code = "S"; 3: char_code = "T"; 4: char_code = "R"; 5: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 18 && col <= 25) begin
-                    char_code = hex32_char(instr, 4'(col - 18));
+                end else if (col >= 7 && col <= 14) begin
+                    char_code = hex32_char(instr, 4'(col - 7));
                 end
-            end
-            
-            6'd5: begin
-                if (col >= 5 && col <= 11) begin
-                    case (col - 5)
-                        0: char_code = "O"; 1: char_code = "p"; 2: char_code = "c"; 3: char_code = "o"; 4: char_code = "d"; 5: char_code = "e"; 6: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 40 && col <= 46) begin
+                    case (col - 40)
+                        0: char_code = "O"; 1: char_code = "P"; 2: char_code = "C"; 3: char_code = "O"; 4: char_code = "D"; 5: char_code = "E"; 6: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 13 && col <= 14) begin
-                    char_code = hex7_char(opcode, 1'(col - 13));
+                end else if (col >= 48 && col <= 49) begin
+                    char_code = hex7_char(opcode, 1'(col - 48));
                 end
-                
-                if (col >= 20 && col <= 26) begin
-                    case (col - 20)
-                        0: char_code = "F"; 1: char_code = "u"; 2: char_code = "n"; 3: char_code = "c"; 4: char_code = "t"; 5: char_code = "3"; 6: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 51 && col <= 57) begin
+                    case (col - 51)
+                        0: char_code = "F"; 1: char_code = "U"; 2: char_code = "N"; 3: char_code = "C"; 4: char_code = "T"; 5: char_code = "3"; 6: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col == 28) begin
+                end else if (col == 59) begin
                     char_code = hex3_char(funct3);
                 end
-                
-                if (col >= 35 && col <= 41) begin
-                    case (col - 35)
-                        0: char_code = "F"; 1: char_code = "u"; 2: char_code = "n"; 3: char_code = "c"; 4: char_code = "t"; 5: char_code = "7"; 6: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 61 && col <= 67) begin
+                    case (col - 61)
+                        0: char_code = "F"; 1: char_code = "U"; 2: char_code = "N"; 3: char_code = "C"; 4: char_code = "T"; 5: char_code = "7"; 6: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 43 && col <= 44) begin
-                    char_code = hex7_char(funct7, 1'(col - 43));
+                end else if (col >= 69 && col <= 70) begin
+                    char_code = hex7_char(funct7, 1'(col - 69));
                 end
             end
-            
-            6'd7: begin
-                if (col >= 5 && col <= 8) begin
-                    case (col - 5)
-                        0: char_code = "r"; 1: char_code = "s"; 2: char_code = "1"; 3: char_code = ":";
-                        default: char_code = " ";
+
+            5'd2: begin
+                if (col <= 3) begin
+                    case (col)
+                        0: char_code = "I"; 1: char_code = "M"; 2: char_code = "M"; 3: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 10 && col <= 11) begin
-                    char_code = hex5_char(rs1, 1'(col - 10));
+                end else if (col >= 5 && col <= 12) begin
+                    char_code = hex32_char(imm_extended, 4'(col - 5));
                 end
-                
-                if (col >= 20 && col <= 28) begin
-                    case (col - 20)
-                        0: char_code = "r"; 1: char_code = "s"; 2: char_code = "1"; 3: char_code = "_"; 4: char_code = "d"; 5: char_code = "a"; 6: char_code = "t"; 7: char_code = "a"; 8: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 40 && col <= 43) begin
+                    case (col - 40)
+                        0: char_code = "R"; 1: char_code = "S"; 2: char_code = "1"; 3: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 30 && col <= 37) begin
-                    char_code = hex32_char(rs1_data, 4'(col - 30));
+                end else if (col >= 45 && col <= 46) begin
+                    char_code = hex5_char(rs1, 1'(col - 45));
                 end
-            end
-            
-            6'd8: begin
-                if (col >= 5 && col <= 8) begin
-                    case (col - 5)
-                        0: char_code = "r"; 1: char_code = "s"; 2: char_code = "2"; 3: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 48 && col <= 56) begin
+                    case (col - 48)
+                        0: char_code = "R"; 1: char_code = "S"; 2: char_code = "1"; 3: char_code = "_"; 4: char_code = "D"; 5: char_code = "A"; 6: char_code = "T"; 7: char_code = "A"; 8: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 10 && col <= 11) begin
-                    char_code = hex5_char(rs2, 1'(col - 10));
-                end
-                
-                if (col >= 20 && col <= 28) begin
-                    case (col - 20)
-                        0: char_code = "r"; 1: char_code = "s"; 2: char_code = "2"; 3: char_code = "_"; 4: char_code = "d"; 5: char_code = "a"; 6: char_code = "t"; 7: char_code = "a"; 8: char_code = ":";
-                        default: char_code = " ";
-                    endcase
-                end else if (col >= 30 && col <= 37) begin
-                    char_code = hex32_char(rs2_data, 4'(col - 30));
+                end else if (col >= 58 && col <= 65) begin
+                    char_code = hex32_char(rs1_data, 4'(col - 58));
                 end
             end
-            
-            6'd9: begin
-                if (col >= 5 && col <= 7) begin
-                    case (col - 5)
-                        0: char_code = "r"; 1: char_code = "d"; 2: char_code = ":";
-                        default: char_code = " ";
+
+            5'd3: begin
+                if (col <= 3) begin
+                    case (col)
+                        0: char_code = "R"; 1: char_code = "S"; 2: char_code = "2"; 3: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 9 && col <= 10) begin
-                    char_code = hex5_char(rd, 1'(col - 9));
+                end else if (col >= 5 && col <= 6) begin
+                    char_code = hex5_char(rs2, 1'(col - 5));
                 end
-                
-                if (col >= 20 && col <= 32) begin
-                    case (col - 20)
-                        0: char_code = "R"; 1: char_code = "e"; 2: char_code = "g"; 3: char_code = " "; 4: char_code = "W"; 5: char_code = "r"; 6: char_code = "i"; 7: char_code = "t"; 8: char_code = "e"; 9: char_code = "E"; 10: char_code = "N"; 11: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 8 && col <= 16) begin
+                    case (col - 8)
+                        0: char_code = "R"; 1: char_code = "S"; 2: char_code = "2"; 3: char_code = "_"; 4: char_code = "D"; 5: char_code = "A"; 6: char_code = "T"; 7: char_code = "A"; 8: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col == 34) begin
+                end else if (col >= 18 && col <= 25) begin
+                    char_code = hex32_char(rs2_data, 4'(col - 18));
+                end
+
+                if (col >= 40 && col <= 42) begin
+                    case (col - 40)
+                        0: char_code = "R"; 1: char_code = "D"; 2: char_code = ":"; default: char_code = " ";
+                    endcase
+                end else if (col >= 44 && col <= 45) begin
+                    char_code = hex5_char(rd, 1'(col - 44));
+                end
+
+                if (col >= 47 && col <= 56) begin
+                    case (col - 47)
+                        0: char_code = "R"; 1: char_code = "E"; 2: char_code = "G"; 3: char_code = "_"; 4: char_code = "W"; 5: char_code = "R"; 6: char_code = "I"; 7: char_code = "T"; 8: char_code = "E"; 9: char_code = ":"; default: char_code = " ";
+                    endcase
+                end else if (col == 58) begin
                     char_code = bit_char(reg_write);
                 end
             end
 
-            6'd11: begin
-                if (col >= 5 && col <= 11) begin
-                    case (col - 5)
-                        0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "A"; 5: char_code = ":"; 6: char_code = " ";
-                        default: char_code = " ";
+            5'd4: begin
+                if (col <= 5) begin
+                    case (col)
+                        0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "A"; 5: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 13 && col <= 20) begin
-                    char_code = hex32_char(ALU_A, 4'(col - 13));
+                end else if (col >= 7 && col <= 14) begin
+                    char_code = hex32_char(ALU_A, 4'(col - 7));
                 end
-                
-                if (col >= 25 && col <= 31) begin
-                    case (col - 25)
-                        0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "B"; 5: char_code = ":"; 6: char_code = " ";
-                        default: char_code = " ";
+
+                if (col >= 40 && col <= 45) begin
+                    case (col - 40)
+                        0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "B"; 5: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 33 && col <= 40) begin
-                    char_code = hex32_char(ALU_B, 4'(col - 33));
+                end else if (col >= 47 && col <= 54) begin
+                    char_code = hex32_char(ALU_B, 4'(col - 47));
                 end
             end
-            
-            6'd12: begin
-                if (col >= 5 && col <= 13) begin
-                    case (col - 5)
-                        0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "r"; 5: char_code = "e"; 6: char_code = "s"; 7: char_code = ":"; 8: char_code = " ";
-                        default: char_code = " ";
+
+            5'd5: begin
+                if (col <= 7) begin
+                    case (col)
+                        0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "R"; 5: char_code = "E"; 6: char_code = "S"; 7: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 15 && col <= 22) begin
-                    char_code = hex32_char(ALU_res, 4'(col - 15));
+                end else if (col >= 9 && col <= 16) begin
+                    char_code = hex32_char(ALU_res, 4'(col - 9));
+                end
+
+                if (col >= 40 && col <= 47) begin
+                    case (col - 40)
+                        0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "S"; 5: char_code = "R"; 6: char_code = "C"; 7: char_code = ":"; default: char_code = " ";
+                    endcase
+                end else if (col == 49) begin
+                    char_code = bit_char(ALU_src);
                 end
             end
-            
-            6'd14: begin
-                if (col >= 5 && col <= 14) begin
-                    case (col - 5)
-                        0: char_code = "M"; 1: char_code = "e"; 2: char_code = "m"; 3: char_code = " "; 4: char_code = "W"; 5: char_code = "r"; 6: char_code = "i"; 7: char_code = "t"; 8: char_code = "e"; 9: char_code = ":";
-                        default: char_code = " ";
+
+            5'd6: begin
+                if (col <= 8) begin
+                    case (col)
+                        0: char_code = "M"; 1: char_code = "E"; 2: char_code = "M"; 3: char_code = "_"; 4: char_code = "D"; 5: char_code = "A"; 6: char_code = "T"; 7: char_code = "A"; 8: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col == 16) begin
+                end else if (col >= 10 && col <= 17) begin
+                    char_code = hex32_char(mem_data, 4'(col - 10));
+                end
+
+                if (col >= 40 && col <= 47) begin
+                    case (col - 40)
+                        0: char_code = "D"; 1: char_code = "A"; 2: char_code = "T"; 3: char_code = "A"; 4: char_code = "_"; 5: char_code = "W"; 6: char_code = "R"; 7: char_code = ":"; default: char_code = " ";
+                    endcase
+                end else if (col >= 49 && col <= 56) begin
+                    char_code = hex32_char(data_wr, 4'(col - 49));
+                end
+            end
+
+            5'd7: begin
+                if (col <= 9) begin
+                    case (col)
+                        0: char_code = "M"; 1: char_code = "E"; 2: char_code = "M"; 3: char_code = "_"; 4: char_code = "W"; 5: char_code = "R"; 6: char_code = "I"; 7: char_code = "T"; 8: char_code = "E"; 9: char_code = ":"; default: char_code = " ";
+                    endcase
+                end else if (col == 11) begin
                     char_code = bit_char(mem_write);
                 end
-                
-                if (col >= 20 && col <= 29) begin
-                    case (col - 20)
-                        0: char_code = "M"; 1: char_code = "e"; 2: char_code = "m"; 3: char_code = " "; 4: char_code = "t"; 5: char_code = "o"; 6: char_code = " "; 7: char_code = "R"; 8: char_code = "e"; 9: char_code = "g"; 10: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 40 && col <= 50) begin
+                    case (col - 40)
+                        0: char_code = "M"; 1: char_code = "E"; 2: char_code = "M"; 3: char_code = "_"; 4: char_code = "T"; 5: char_code = "O"; 6: char_code = "_"; 7: char_code = "R"; 8: char_code = "E"; 9: char_code = "G"; 10: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col == 31) begin
+                end else if (col == 52) begin
                     char_code = bit_char(mem_to_reg);
                 end
             end
-            
-            6'd15: begin
-                if (col >= 5 && col <= 13) begin
-                    case (col - 5)
-                        0: char_code = "M"; 1: char_code = "e"; 2: char_code = "m"; 3: char_code = "_"; 4: char_code = "D"; 5: char_code = "a"; 6: char_code = "t"; 7: char_code = "a"; 8: char_code = ":";
-                        default: char_code = " ";
+
+            5'd8: begin
+                if (col <= 12) begin
+                    case (col)
+                        0: char_code = "B"; 1: char_code = "R"; 2: char_code = "A"; 3: char_code = "N"; 4: char_code = "C"; 5: char_code = "H"; 6: char_code = "_"; 7: char_code = "T"; 8: char_code = "A"; 9: char_code = "K"; 10: char_code = "E"; 11: char_code = "N"; 12: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col >= 15 && col <= 22) begin
-                    char_code = hex32_char(mem_data, 4'(col - 15));
-                end
-                
-                if (col >= 25 && col <= 32) begin
-                    case (col - 25)
-                        0: char_code = "D"; 1: char_code = "a"; 2: char_code = "t"; 3: char_code = "a"; 4: char_code = "_"; 5: char_code = "W"; 6: char_code = "r"; 7: char_code = ":";
-                        default: char_code = " ";
-                    endcase
-                end else if (col >= 34 && col <= 41) begin
-                    char_code = hex32_char(data_wr, 4'(col - 34));
-                end
-            end
-            
-            6'd17: begin
-                if (col >= 5 && col <= 17) begin
-                    case (col - 5)
-                        0: char_code = "B"; 1: char_code = "r"; 2: char_code = "a"; 3: char_code = "n"; 4: char_code = "c"; 5: char_code = "h"; 6: char_code = " "; 7: char_code = "T"; 8: char_code = "a"; 9: char_code = "k"; 10: char_code = "e"; 11: char_code = "n"; 12: char_code = ":";
-                        default: char_code = " ";
-                    endcase
-                end else if (col == 19) begin
+                end else if (col == 14) begin
                     char_code = bit_char(branch_taken);
                 end
-                
-                if (col >= 25 && col <= 29) begin
-                    case (col - 25)
-                        0: char_code = "J"; 1: char_code = "u"; 2: char_code = "m"; 3: char_code = "p"; 4: char_code = ":";
-                        default: char_code = " ";
+
+                if (col >= 40 && col <= 44) begin
+                    case (col - 40)
+                        0: char_code = "J"; 1: char_code = "U"; 2: char_code = "M"; 3: char_code = "P"; 4: char_code = ":"; default: char_code = " ";
                     endcase
-                end else if (col == 31) begin
+                end else if (col == 46) begin
                     char_code = bit_char(jump);
                 end
             end
-            
+
             default: char_code = 8'h20;
         endcase
     end
+
 
     // Output colors
     always_comb begin
