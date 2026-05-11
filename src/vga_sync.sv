@@ -8,7 +8,6 @@ module vga_sync (
     output logic [9:0] pixel_y
 );
 
-    // VGA Timing parameters for 640x480 @ 60Hz
     localparam H_DISPLAY = 640;
     localparam H_FP      = 16;
     localparam H_SYNC    = 96;
@@ -24,7 +23,6 @@ module vga_sync (
     logic [9:0] h_count_reg, h_count_next;
     logic [9:0] v_count_reg, v_count_next;
 
-    // Registers for horizontal and vertical counters
     always_ff @(posedge clk_25mhz or negedge rst_n) begin
         if (!rst_n) begin
             h_count_reg <= 10'd0;
@@ -35,7 +33,6 @@ module vga_sync (
         end
     end
 
-    // Next-state logic for counters
     always_comb begin
         h_count_next = h_count_reg;
         v_count_next = v_count_reg;
@@ -52,15 +49,11 @@ module vga_sync (
         end
     end
 
-    // Output assignments
-    // Sync signals are active low
     assign hsync = ~(h_count_reg >= (H_DISPLAY + H_FP) && h_count_reg < (H_DISPLAY + H_FP + H_SYNC));
     assign vsync = ~(v_count_reg >= (V_DISPLAY + V_FP) && v_count_reg < (V_DISPLAY + V_FP + V_SYNC));
     
-    // Video on during active display area
     assign video_on = (h_count_reg < H_DISPLAY) && (v_count_reg < V_DISPLAY);
     
-    // Pixel coordinates
     assign pixel_x = h_count_reg;
     assign pixel_y = v_count_reg;
 

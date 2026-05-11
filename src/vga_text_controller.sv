@@ -5,7 +5,6 @@ module vga_text_controller (
     input logic video_on,
     input logic [9:0] pixel_x,
     input logic [9:0] pixel_y,
-    // RISC-V states
     input logic [31:0] address,
     input logic [31:0] next_pc,
     input logic [31:0] instr,
@@ -30,7 +29,6 @@ module vga_text_controller (
     input logic mem_to_reg,
     input logic [31:0] data_wr,
     
-    // Outputs
     output logic [7:0] VGA_R,
     output logic [7:0] VGA_G,
     output logic [7:0] VGA_B
@@ -45,26 +43,23 @@ module vga_text_controller (
     logic [10:0] rom_addr;
     logic [7:0] font_word;
 
-    // Instance of font rom
     font_rom font_unit (
         .clk(clk_25mhz),
         .addr(rom_addr),
         .data(font_word)
     );
 
-    // Font ROM address: char_code * 16 + row index inside character (16 rows)
     assign rom_addr = {char_code[6:0], pixel_y[3:0]};
 
     logic font_bit;
-    assign font_bit = font_word[~pixel_x[2:0]]; // 8 pixels wide per character
+    assign font_bit = font_word[~pixel_x[2:0]];
 
-    // Helper functions
     function automatic [7:0] hex2ascii(input [3:0] hex_val);
         begin
             if (hex_val < 10)
-                hex2ascii = 8'h30 + 8'(hex_val); // '0' - '9'
+                hex2ascii = 8'h30 + 8'(hex_val);
             else
-                hex2ascii = 8'h41 + 8'(hex_val - 10); // 'A' - 'F'
+                hex2ascii = 8'h41 + 8'(hex_val - 10);
         end
     endfunction
 
@@ -123,7 +118,7 @@ module vga_text_controller (
     endfunction
 
     always_comb begin
-        char_code = 8'h20; // Default to space
+        char_code = 8'h20;
 
         case (row)
             5'd0: begin
@@ -333,7 +328,6 @@ module vga_text_controller (
     end
 
 
-    // Output colors
     always_comb begin
         if (video_on) begin
             if (font_bit) begin

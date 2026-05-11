@@ -10,10 +10,8 @@ module imm_gen(
         case (immsrc_type)
             IMM_I_TYPE: immediate_out = {{20{instruction[31]}}, instruction[31:20]};
 
-            // Sign-extension for Store instructions splits the immediate fields
             IMM_S_TYPE: immediate_out = {{20{instruction[31]}}, instruction[31:25], instruction[11:7]};
 
-            // Branch instructions omit the 0th bit
             IMM_B_TYPE: immediate_out = {{19{instruction[31]}}, instruction[31], instruction[7], instruction[30:25], instruction[11:8], 1'b0};
 
             IMM_U_TYPE: immediate_out = {instruction[31:12], 12'b0};

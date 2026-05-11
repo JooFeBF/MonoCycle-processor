@@ -14,6 +14,8 @@ module top_level(
   output logic       VGA_SYNC_N
 );
 
+  localparam bit ENABLE_VGA = 1'b1;
+
   wire cpu_clk;
   logic clk_q1, clk_q2;
   always_ff @(posedge CLOCK_50) begin
@@ -101,9 +103,9 @@ module top_level(
   logic [31:0] ALU_B;
 
   always_comb begin
-    if (opcode == 7'b0110111)      // OPC_LUI
+    if (opcode == 7'b0110111)
       ALU_A = 32'b0;
-    else if (opcode == 7'b0010111) // OPC_AUIPC
+    else if (opcode == 7'b0010111)
       ALU_A = address;
     else
       ALU_A = rs1_data;
@@ -145,62 +147,75 @@ module top_level(
     .Datard(mem_data)
   );
 
-  logic clk_25mhz;
-  always_ff @(posedge CLOCK_50 or negedge rst_n) begin
-    if (!rst_n)
-      clk_25mhz <= 1'b0;
-    else
-      clk_25mhz <= ~clk_25mhz;
-  end
+  generate
+    if (ENABLE_VGA) begin : gen_vga
+      logic clk_25mhz;
+      logic video_on;
+      logic [9:0] pixel_x, pixel_y;
 
-  logic video_on;
-  logic [9:0] pixel_x, pixel_y;
+      always_ff @(posedge CLOCK_50 or negedge rst_n) begin
+        if (!rst_n)
+          clk_25mhz <= 1'b0;
+        else
+          clk_25mhz <= ~clk_25mhz;
+      end
 
-  assign VGA_CLK = clk_25mhz;
-  assign VGA_SYNC_N = 1'b0;
-  assign VGA_BLANK_N = video_on;
+      assign VGA_CLK = clk_25mhz;
+      assign VGA_SYNC_N = 1'b0;
+      assign VGA_BLANK_N = video_on;
 
-  vga_sync vga_sync_inst (
-    .clk_25mhz(clk_25mhz),
-    .rst_n(rst_n),
-    .hsync(VGA_HS),
-    .vsync(VGA_VS),
-    .video_on(video_on),
-    .pixel_x(pixel_x),
-    .pixel_y(pixel_y)
-  );
+      vga_sync vga_sync_inst (
+        .clk_25mhz(clk_25mhz),
+        .rst_n(rst_n),
+        .hsync(VGA_HS),
+        .vsync(VGA_VS),
+        .video_on(video_on),
+        .pixel_x(pixel_x),
+        .pixel_y(pixel_y)
+      );
 
-  vga_text_controller vga_text_controller_inst (
-    .clk_25mhz(clk_25mhz),
-    .video_on(video_on),
-    .pixel_x(pixel_x),
-    .pixel_y(pixel_y),
-    .address(address),
-    .next_pc(next_pc),
-    .instr(instr),
-    .opcode(opcode),
-    .funct3(funct3),
-    .funct7(funct7),
-    .imm_extended(imm_extended),
-    .rs1(rs1),
-    .rs1_data(rs1_data),
-    .rs2(rs2),
-    .rs2_data(rs2_data),
-    .rd(rd),
-    .ALU_A(ALU_A),
-    .ALU_B(ALU_B),
-    .ALU_res(ALU_res),
-    .branch_taken(branch_taken),
-    .jump(jump),
-    .mem_data(mem_data),
-    .mem_write(mem_write),
-    .reg_write(reg_write),
-    .ALU_src(ALU_src),
-    .mem_to_reg(mem_to_reg),
-    .data_wr(data_wr),
-    .VGA_R(VGA_R),
-    .VGA_G(VGA_G),
-    .VGA_B(VGA_B)
-  );
+      vga_text_controller vga_text_controller_inst (
+        .clk_25mhz(clk_25mhz),
+        .video_on(video_on),
+        .pixel_x(pixel_x),
+        .pixel_y(pixel_y),
+        .address(address),
+        .next_pc(next_pc),
+        .instr(instr),
+        .opcode(opcode),
+        .funct3(funct3),
+        .funct7(funct7),
+        .imm_extended(imm_extended),
+        .rs1(rs1),
+        .rs1_data(rs1_data),
+        .rs2(rs2),
+        .rs2_data(rs2_data),
+        .rd(rd),
+        .ALU_A(ALU_A),
+        .ALU_B(ALU_B),
+        .ALU_res(ALU_res),
+        .branch_taken(branch_taken),
+        .jump(jump),
+        .mem_data(mem_data),
+        .mem_write(mem_write),
+        .reg_write(reg_write),
+        .ALU_src(ALU_src),
+        .mem_to_reg(mem_to_reg),
+        .data_wr(data_wr),
+        .VGA_R(VGA_R),
+        .VGA_G(VGA_G),
+        .VGA_B(VGA_B)
+      );
+    end else begin : gen_vga_off
+      assign VGA_R = 8'h00;
+      assign VGA_G = 8'h00;
+      assign VGA_B = 8'h00;
+      assign VGA_HS = 1'b0;
+      assign VGA_VS = 1'b0;
+      assign VGA_CLK = 1'b0;
+      assign VGA_BLANK_N = 1'b0;
+      assign VGA_SYNC_N = 1'b0;
+    end
+  endgenerate
 
 endmodule

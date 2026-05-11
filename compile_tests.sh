@@ -20,7 +20,7 @@ for TEST in $TESTS; do
     cp program.hex program_data.hex
     
     # Supress massive output, fail aggressively if not 42!
-    if ! make -f Makefile.cocotb EXTRA_ARGS="-Wno-CASEINCOMPLETE -Wno-WIDTH" > src/c_tests/${TEST}_sim.log 2>&1; then
+    if ! source .venv/bin/activate && make -f Makefile.cocotb EXTRA_ARGS="-Wno-CASEINCOMPLETE -Wno-WIDTH" > src/c_tests/${TEST}_sim.log 2>&1; then
         echo -e "[1;31m[FAILED] $TEST failed assertion![0m"
         exit 1
     else

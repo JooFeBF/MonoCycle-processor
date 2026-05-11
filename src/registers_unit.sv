@@ -15,15 +15,27 @@ module registers_unit (
     output logic [31:0] rs2_data
 );
 
+    /* verilator lint_off UNOPTFLAT */
     logic [31:0] registers [0:31];
+    /* verilator lint_on UNOPTFLAT */
 
-    always_ff @(posedge clk) begin
-        if (rst) begin
-            
-            registers <= '{default: 32'b0};   
-            registers[2] <= 32'd24;           
-        end else if (ru_wr && (rd != 5'd0)) begin
-            registers[rd] <= data_wr;         
+    logic        wr_pending;
+    logic [4:0]  wr_rd;
+    logic [31:0] wr_data;
+
+    always_latch begin
+        if (clk) begin
+            wr_pending = ru_wr;
+            wr_rd = rd;
+            wr_data = data_wr;
+        end
+    end
+
+    always_latch begin
+        if (~clk) begin
+            if (wr_pending && (wr_rd != 5'd0)) begin
+                registers[wr_rd] = wr_data;
+            end
         end
     end
 

@@ -9,7 +9,9 @@ module data_memory (
     output logic  [31:0] Datard
 );
 
+    /* verilator lint_off UNOPTFLAT */
     logic [31:0] memory [0:DMEM_WORDS-1];
+    /* verilator lint_on UNOPTFLAT */
 
     logic [DMEM_ADDR_WIDTH-1:0] word_addr;
     assign word_addr = address[DMEM_ADDR_WIDTH+1:2];
@@ -22,7 +24,6 @@ module data_memory (
         $readmemh(DMEM_INIT_FILE, memory);
     end
 
-    // Combinational read
     always_comb begin
         case (DMCTRL)
             3'b000: begin
@@ -67,33 +68,50 @@ module data_memory (
         endcase
     end
 
-    // Synchronous write
-    always_ff @(posedge clk) begin
-        if (mem_write) begin
-            case (DMCTRL)
-                3'b000, 3'b100: begin // Store Byte
-                    case (byte_offset)
-                        2'b00: memory[word_addr] <= {memory[word_addr][31:8], DMWR[7:0]};
-                        2'b01: memory[word_addr] <= {memory[word_addr][31:16], DMWR[7:0], memory[word_addr][7:0]};
-                        2'b10: memory[word_addr] <= {memory[word_addr][31:24], DMWR[7:0], memory[word_addr][15:0]};
-                        2'b11: memory[word_addr] <= {DMWR[7:0], memory[word_addr][23:0]};
-                    endcase
-                end
+    logic                     wr_pending;
+    logic [DMEM_ADDR_WIDTH-1:0] wr_addr;
+    logic [1:0]               wr_byte_offset;
+    logic [2:0]               wr_ctrl;
+    logic [31:0]              wr_data;
 
-                3'b001, 3'b101: begin // Store Halfword
-                    case (byte_offset[1])
-                        1'b0: memory[word_addr] <= {memory[word_addr][31:16], DMWR[15:0]};
-                        1'b1: memory[word_addr] <= {DMWR[15:0], memory[word_addr][15:0]};
-                    endcase
-                end
+    always_latch begin
+        if (clk) begin
+            wr_pending = mem_write;
+            wr_addr = word_addr;
+            wr_byte_offset = byte_offset;
+            wr_ctrl = DMCTRL;
+            wr_data = DMWR;
+        end
+    end
 
-                3'b010: begin // Store Word
-                    memory[word_addr] <= DMWR;
-                end
-                
-                default: begin
-                end
-            endcase
+    always_latch begin
+        if (~clk) begin
+            if (wr_pending) begin
+                case (wr_ctrl)
+                    3'b000, 3'b100: begin
+                        case (wr_byte_offset)
+                            2'b00: memory[wr_addr] = {memory[wr_addr][31:8], wr_data[7:0]};
+                            2'b01: memory[wr_addr] = {memory[wr_addr][31:16], wr_data[7:0], memory[wr_addr][7:0]};
+                            2'b10: memory[wr_addr] = {memory[wr_addr][31:24], wr_data[7:0], memory[wr_addr][15:0]};
+                            2'b11: memory[wr_addr] = {wr_data[7:0], memory[wr_addr][23:0]};
+                        endcase
+                    end
+
+                    3'b001, 3'b101: begin
+                        case (wr_byte_offset[1])
+                            1'b0: memory[wr_addr] = {memory[wr_addr][31:16], wr_data[15:0]};
+                            1'b1: memory[wr_addr] = {wr_data[15:0], memory[wr_addr][15:0]};
+                        endcase
+                    end
+
+                    3'b010: begin
+                        memory[wr_addr] = wr_data;
+                    end
+                    
+                    default: begin
+                    end
+                endcase
+            end
         end
     end
 
