@@ -35,9 +35,6 @@ results.xml
 # Python/Pytest
 .pytest_cache/
 
-# Generated Hex files for memory initialization
-*.hex
-
 # HDL Checker
 .hdl_checker/
 
