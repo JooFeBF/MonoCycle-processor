@@ -74,7 +74,8 @@ module data_memory (
     logic [2:0]               wr_ctrl;
     logic [31:0]              wr_data;
 
-    always_latch begin
+    // Phase 1: Capture write request on clock high (asynchronous latch)
+    always @(clk or mem_write or word_addr or byte_offset or DMCTRL or DMWR) begin
         if (clk) begin
             wr_pending = mem_write;
             wr_addr = word_addr;
@@ -84,34 +85,33 @@ module data_memory (
         end
     end
 
-    always_latch begin
-        if (~clk) begin
-            if (wr_pending) begin
-                case (wr_ctrl)
-                    3'b000, 3'b100: begin
-                        case (wr_byte_offset)
-                            2'b00: memory[wr_addr] = {memory[wr_addr][31:8], wr_data[7:0]};
-                            2'b01: memory[wr_addr] = {memory[wr_addr][31:16], wr_data[7:0], memory[wr_addr][7:0]};
-                            2'b10: memory[wr_addr] = {memory[wr_addr][31:24], wr_data[7:0], memory[wr_addr][15:0]};
-                            2'b11: memory[wr_addr] = {wr_data[7:0], memory[wr_addr][23:0]};
-                        endcase
-                    end
+    // Phase 2: Commit write on clock low (asynchronous write)
+    always @(clk or wr_pending or wr_ctrl or wr_byte_offset or wr_addr or wr_data) begin
+        if (~clk && wr_pending) begin
+            case (wr_ctrl)
+                3'b000, 3'b100: begin // Store Byte
+                    case (wr_byte_offset)
+                        2'b00: memory[wr_addr] = {memory[wr_addr][31:8], wr_data[7:0]};
+                        2'b01: memory[wr_addr] = {memory[wr_addr][31:16], wr_data[7:0], memory[wr_addr][7:0]};
+                        2'b10: memory[wr_addr] = {memory[wr_addr][31:24], wr_data[7:0], memory[wr_addr][15:0]};
+                        2'b11: memory[wr_addr] = {wr_data[7:0], memory[wr_addr][23:0]};
+                    endcase
+                end
 
-                    3'b001, 3'b101: begin
-                        case (wr_byte_offset[1])
-                            1'b0: memory[wr_addr] = {memory[wr_addr][31:16], wr_data[15:0]};
-                            1'b1: memory[wr_addr] = {wr_data[15:0], memory[wr_addr][15:0]};
-                        endcase
-                    end
+                3'b001, 3'b101: begin // Store Halfword
+                    case (wr_byte_offset[1])
+                        1'b0: memory[wr_addr] = {memory[wr_addr][31:16], wr_data[15:0]};
+                        1'b1: memory[wr_addr] = {wr_data[15:0], memory[wr_addr][15:0]};
+                    endcase
+                end
 
-                    3'b010: begin
-                        memory[wr_addr] = wr_data;
-                    end
-                    
-                    default: begin
-                    end
-                endcase
-            end
+                3'b010: begin // Store Word
+                    memory[wr_addr] = wr_data;
+                end
+                
+                default: begin
+                end
+            endcase
         end
     end
 

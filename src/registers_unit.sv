@@ -23,7 +23,8 @@ module registers_unit (
     logic [4:0]  wr_rd;
     logic [31:0] wr_data;
 
-    always_latch begin
+    // Phase 1: Capture write request on clock high (asynchronous latch)
+    always @(clk or ru_wr or rd or data_wr) begin
         if (clk) begin
             wr_pending = ru_wr;
             wr_rd = rd;
@@ -31,11 +32,10 @@ module registers_unit (
         end
     end
 
-    always_latch begin
-        if (~clk) begin
-            if (wr_pending && (wr_rd != 5'd0)) begin
-                registers[wr_rd] = wr_data;
-            end
+    // Phase 2: Commit write on clock low (asynchronous write)
+    always @(clk or wr_pending or wr_rd or wr_data) begin
+        if (~clk && wr_pending && (wr_rd != 5'd0)) begin
+            registers[wr_rd] = wr_data;
         end
     end
 
