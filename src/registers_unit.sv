@@ -19,23 +19,10 @@ module registers_unit (
     logic [31:0] registers [0:31];
     /* verilator lint_on UNOPTFLAT */
 
-    logic        wr_pending;
-    logic [4:0]  wr_rd;
-    logic [31:0] wr_data;
-
-    // Phase 1: Capture write request on clock high (asynchronous latch)
-    always @(clk or ru_wr or rd or data_wr) begin
-        if (clk) begin
-            wr_pending = ru_wr;
-            wr_rd = rd;
-            wr_data = data_wr;
-        end
-    end
-
-    // Phase 2: Commit write on clock low (asynchronous write)
-    always @(clk or wr_pending or wr_rd or wr_data) begin
-        if (~clk && wr_pending && (wr_rd != 5'd0)) begin
-            registers[wr_rd] = wr_data;
+    // Synchronous register write for RAM block inference
+    always @(negedge clk) begin
+        if (ru_wr && (rd != 5'd0)) begin
+            registers[rd] <= data_wr;
         end
     end
 
