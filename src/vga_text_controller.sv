@@ -40,7 +40,7 @@ module vga_text_controller (
     assign row = pixel_y[9:4];
 
     logic [7:0] char_code;
-    logic [10:0] rom_addr;
+    logic [11:0] rom_addr;
     logic [7:0] font_word;
 
     font_rom font_unit (
@@ -49,10 +49,10 @@ module vga_text_controller (
         .data(font_word)
     );
 
-    assign rom_addr = {char_code[6:0], pixel_y[3:0]};
+    assign rom_addr = {char_code[7:0], pixel_y[3:0]};
 
     logic font_bit;
-    assign font_bit = font_word[~pixel_x[2:0]];
+    assign font_bit = font_word[7-pixel_x[2:0]];
 
     function automatic [7:0] hex2ascii(input [3:0] hex_val);
         begin
