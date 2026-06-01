@@ -11,6 +11,8 @@ VERILOG_SOURCES += $(PWD)/src/rv_config_pkg.sv \
                    $(PWD)/src/instruction_memory.sv \
                    $(PWD)/src/pc.sv \
                    $(PWD)/src/registers_unit.sv \
+                   $(PWD)/src/forwarding_unit.sv \
+                   $(PWD)/src/hazard_detection_unit.sv \
                    $(PWD)/src/vga_sync.sv \
                    $(PWD)/src/font_rom.sv \
                    $(PWD)/src/vga_text_controller.sv \

@@ -68,7 +68,6 @@ module data_memory (
     end
 
 
-    // RAM block compatible write (synchronous write, asynchronous read)
     always @(negedge clk) begin
         if (mem_write) begin
             case (DMCTRL)

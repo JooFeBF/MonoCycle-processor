@@ -22,7 +22,6 @@ module registers_unit (
     
     assign registers = reg_array;
 
-    // Synchronous register write for RAM block inference
     always @(negedge clk) begin
         if (rst) begin
             for (int i = 1; i < 32; i++) begin
