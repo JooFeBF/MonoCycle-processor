@@ -85,6 +85,8 @@ module top_level(
   logic [31:0] rs1_data, rs2_data;
   logic [31:0] pc_plus_4; assign pc_plus_4 = address + 4;
   logic [31:0] data_wr;   assign data_wr = jump ? pc_plus_4 : (mem_to_reg ? mem_data : ALU_res);
+  logic [31:0] reg_file [0:31];
+  logic [31:0] reg_file_vga [0:31];
 
   registers_unit regfile_inst (
     .clk(cpu_clk),
@@ -95,7 +97,8 @@ module top_level(
     .ru_wr(reg_write),
     .data_wr(data_wr),
     .rs1_data(rs1_data),
-    .rs2_data(rs2_data)
+    .rs2_data(rs2_data),
+    .registers(reg_file)
   );
 
   logic [31:0] ALU_res;
@@ -137,6 +140,8 @@ module top_level(
   assign next_pc = pc_src ? jump_target : pc_plus_4;
 
   logic [31:0] mem_data;
+  logic [31:0] data_mem [0:127];
+  logic [31:0] data_mem_vga [0:127];
 
   data_memory dmem_inst (
     .clk(cpu_clk),
@@ -144,7 +149,8 @@ module top_level(
     .DMWR(rs2_data),
     .DMCTRL(funct3),
     .mem_write(mem_write),
-    .Datard(mem_data)
+    .Datard(mem_data),
+    .memory(data_mem)
   );
 
   generate
@@ -163,6 +169,16 @@ module top_level(
       assign VGA_CLK = clk_25mhz;
       assign VGA_SYNC_N = 1'b0;
       assign VGA_BLANK_N = video_on;
+
+      always_ff @(posedge clk_25mhz or negedge rst_n) begin
+        if (!rst_n) begin
+          reg_file_vga <= '{default: 32'h0};
+          data_mem_vga <= '{default: 32'h0};
+        end else begin
+          reg_file_vga <= reg_file;
+          data_mem_vga <= data_mem;
+        end
+      end
 
       vga_sync vga_sync_inst (
         .clk_25mhz(clk_25mhz),
@@ -202,6 +218,8 @@ module top_level(
         .ALU_src(ALU_src),
         .mem_to_reg(mem_to_reg),
         .data_wr(data_wr),
+        .reg_file(reg_file_vga),
+        .data_mem(data_mem_vga),
         .VGA_R(VGA_R),
         .VGA_G(VGA_G),
         .VGA_B(VGA_B)

@@ -28,6 +28,8 @@ module vga_text_controller (
     input logic ALU_src,
     input logic mem_to_reg,
     input logic [31:0] data_wr,
+    input logic [31:0] reg_file [0:31],
+    input logic [31:0] data_mem [0:127],
     
     output logic [7:0] VGA_R,
     output logic [7:0] VGA_G,
@@ -320,6 +322,77 @@ module vga_text_controller (
                     endcase
                 end else if (col == 46) begin
                     char_code = bit_char(jump);
+                end
+            end
+
+            5'd10, 5'd11, 5'd12, 5'd13, 5'd14, 5'd15, 5'd16, 5'd17,
+            5'd18, 5'd19, 5'd20, 5'd21, 5'd22, 5'd23, 5'd24, 5'd25: begin
+                logic [4:0] reg_row_idx;
+                logic [4:0] left_reg, right_reg;
+                reg_row_idx = row - 10;
+                left_reg = reg_row_idx * 2;
+                right_reg = reg_row_idx * 2 + 1;
+                
+                if (col <= 2) begin
+                    case (col)
+                        0: char_code = "x";
+                        1: char_code = hex5_char(left_reg, 1'b0);
+                        2: char_code = hex5_char(left_reg, 1'b1);
+                    endcase
+                end else if (col == 3) begin
+                    char_code = ":";
+                end else if (col >= 4 && col <= 11) begin
+                    char_code = hex32_char(reg_file[left_reg], 4'(col - 4));
+                end else if (col >= 14 && col <= 16) begin
+                    case (col - 14)
+                        0: char_code = "x";
+                        1: char_code = hex5_char(right_reg, 1'b0);
+                        2: char_code = hex5_char(right_reg, 1'b1);
+                    endcase
+                end else if (col == 17) begin
+                    char_code = ":";
+                end else if (col >= 18 && col <= 25) begin
+                    char_code = hex32_char(reg_file[right_reg], 4'(col - 18));
+                end
+            end
+
+            5'd26, 5'd27, 5'd28, 5'd29: begin
+                logic [4:0] mem_row_idx;
+                logic [6:0] base_addr;
+                mem_row_idx = row - 26;
+                base_addr = 7'd112 + mem_row_idx * 16;
+                
+                if (col <= 7) begin
+                    case (col)
+                        0: char_code = "D"; 1: char_code = "A"; 2: char_code = "T"; 3: char_code = "A"; 
+                        4: char_code = "["; 5: char_code = hex8_char({1'b0, base_addr}, 1'b0);
+                        6: char_code = hex8_char({1'b0, base_addr}, 1'b1); 7: char_code = "]";
+                    endcase
+                end else if (col == 8) begin
+                    char_code = ":";
+                end else if (col >= 10 && col <= 57) begin
+                    logic [3:0] byte_idx;
+                    logic [6:0] mem_addr;
+                    logic [31:0] mem_word;
+                    logic [1:0] byte_sel;
+                    
+                    byte_idx = (col - 10) / 3;
+                    mem_addr = base_addr + byte_idx;
+                    mem_word = data_mem[mem_addr >> 2];
+                    byte_sel = mem_addr[1:0];
+                    
+                    if ((col - 10) % 3 < 2) begin
+                        logic [7:0] byte_val;
+                        case (byte_sel)
+                            2'b00: byte_val = mem_word[7:0];
+                            2'b01: byte_val = mem_word[15:8];
+                            2'b10: byte_val = mem_word[23:16];
+                            2'b11: byte_val = mem_word[31:24];
+                        endcase
+                        char_code = hex8_char(byte_val, 1'((col - 10) % 3));
+                    end else begin
+                        char_code = " ";
+                    end
                 end
             end
 
