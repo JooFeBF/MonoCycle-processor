@@ -1,5 +1,3 @@
-/* verilator lint_off WIDTHTRUNC */
-/* verilator lint_off WIDTHEXPAND */
 module vga_text_controller (
     input logic clk_25mhz,
     input logic video_on,
@@ -30,32 +28,32 @@ module vga_text_controller (
     input logic [31:0] data_wr,
     input logic [31:0] reg_file [0:31],
     input logic [31:0] data_mem [0:127],
-    
     output logic [7:0] VGA_R,
     output logic [7:0] VGA_G,
     output logic [7:0] VGA_B
 );
-
     logic [6:0] col;
     logic [4:0] row;
     assign col = pixel_x[9:3];
     assign row = pixel_y[9:4];
-
     logic [7:0] char_code;
     logic [11:0] rom_addr;
     logic [7:0] font_word;
-
     font_rom font_unit (
         .clk(clk_25mhz),
         .addr(rom_addr),
         .data(font_word)
     );
-
     assign rom_addr = {char_code[7:0], pixel_y[3:0]};
-
+    logic [2:0] pixel_x_d1;
+    logic       video_on_d1, video_on_d2;
+    always_ff @(posedge clk_25mhz) begin
+        pixel_x_d1  <= pixel_x[2:0];
+        video_on_d1 <= video_on;
+        video_on_d2 <= video_on_d1;
+    end
     logic font_bit;
-    assign font_bit = font_word[7-pixel_x[2:0]];
-
+    assign font_bit = font_word[7 - pixel_x_d1];
     function automatic [7:0] hex2ascii(input [3:0] hex_val);
         begin
             if (hex_val < 10)
@@ -64,7 +62,6 @@ module vga_text_controller (
                 hex2ascii = 8'h41 + 8'(hex_val - 10);
         end
     endfunction
-
     function automatic [7:0] hex32_char(input [31:0] val, input [3:0] idx);
         logic [3:0] nibble;
         begin
@@ -82,7 +79,6 @@ module vga_text_controller (
             hex32_char = hex2ascii(nibble);
         end
     endfunction
-
     function automatic [7:0] hex8_char(input [7:0] val, input bit idx);
         logic [3:0] nibble;
         begin
@@ -91,7 +87,6 @@ module vga_text_controller (
             hex8_char = hex2ascii(nibble);
         end
     endfunction
-
     function automatic [7:0] hex7_char(input [6:0] val, input bit idx);
         logic [3:0] nibble;
         begin
@@ -100,7 +95,6 @@ module vga_text_controller (
             hex7_char = hex2ascii(nibble);
         end
     endfunction
-    
     function automatic [7:0] hex5_char(input [4:0] val, input bit idx);
         logic [3:0] nibble;
         begin
@@ -109,19 +103,14 @@ module vga_text_controller (
             hex5_char = hex2ascii(nibble);
         end
     endfunction
-
-    
     function automatic [7:0] hex3_char(input [2:0] val);
         hex3_char = hex2ascii({1'b0, val});
     endfunction
-    
     function automatic [7:0] bit_char(input b);
         bit_char = b ? 8'h31 : 8'h30;
     endfunction
-
     always_comb begin
         char_code = 8'h20;
-
         case (row)
             5'd0: begin
                 if (col <= 4) begin
@@ -131,7 +120,6 @@ module vga_text_controller (
                 end else if (col >= 6 && col <= 13) begin
                     char_code = hex32_char(address, 4'(col - 6));
                 end
-
                 if (col >= 40 && col <= 47) begin
                     case (col - 40)
                         0: char_code = "N"; 1: char_code = "E"; 2: char_code = "X"; 3: char_code = "T"; 4: char_code = "_"; 5: char_code = "P"; 6: char_code = "C"; 7: char_code = ":"; default: char_code = " ";
@@ -140,7 +128,6 @@ module vga_text_controller (
                     char_code = hex32_char(next_pc, 4'(col - 49));
                 end
             end
-
             5'd1: begin
                 if (col <= 5) begin
                     case (col)
@@ -149,7 +136,6 @@ module vga_text_controller (
                 end else if (col >= 7 && col <= 14) begin
                     char_code = hex32_char(instr, 4'(col - 7));
                 end
-
                 if (col >= 40 && col <= 46) begin
                     case (col - 40)
                         0: char_code = "O"; 1: char_code = "P"; 2: char_code = "C"; 3: char_code = "O"; 4: char_code = "D"; 5: char_code = "E"; 6: char_code = ":"; default: char_code = " ";
@@ -157,7 +143,6 @@ module vga_text_controller (
                 end else if (col >= 48 && col <= 49) begin
                     char_code = hex7_char(opcode, 1'(col - 48));
                 end
-
                 if (col >= 51 && col <= 57) begin
                     case (col - 51)
                         0: char_code = "F"; 1: char_code = "U"; 2: char_code = "N"; 3: char_code = "C"; 4: char_code = "T"; 5: char_code = "3"; 6: char_code = ":"; default: char_code = " ";
@@ -165,7 +150,6 @@ module vga_text_controller (
                 end else if (col == 59) begin
                     char_code = hex3_char(funct3);
                 end
-
                 if (col >= 61 && col <= 67) begin
                     case (col - 61)
                         0: char_code = "F"; 1: char_code = "U"; 2: char_code = "N"; 3: char_code = "C"; 4: char_code = "T"; 5: char_code = "7"; 6: char_code = ":"; default: char_code = " ";
@@ -174,7 +158,6 @@ module vga_text_controller (
                     char_code = hex7_char(funct7, 1'(col - 69));
                 end
             end
-
             5'd2: begin
                 if (col <= 3) begin
                     case (col)
@@ -183,7 +166,6 @@ module vga_text_controller (
                 end else if (col >= 5 && col <= 12) begin
                     char_code = hex32_char(imm_extended, 4'(col - 5));
                 end
-
                 if (col >= 40 && col <= 43) begin
                     case (col - 40)
                         0: char_code = "R"; 1: char_code = "S"; 2: char_code = "1"; 3: char_code = ":"; default: char_code = " ";
@@ -191,7 +173,6 @@ module vga_text_controller (
                 end else if (col >= 45 && col <= 46) begin
                     char_code = hex5_char(rs1, 1'(col - 45));
                 end
-
                 if (col >= 48 && col <= 56) begin
                     case (col - 48)
                         0: char_code = "R"; 1: char_code = "S"; 2: char_code = "1"; 3: char_code = "_"; 4: char_code = "D"; 5: char_code = "A"; 6: char_code = "T"; 7: char_code = "A"; 8: char_code = ":"; default: char_code = " ";
@@ -200,7 +181,6 @@ module vga_text_controller (
                     char_code = hex32_char(rs1_data, 4'(col - 58));
                 end
             end
-
             5'd3: begin
                 if (col <= 3) begin
                     case (col)
@@ -209,7 +189,6 @@ module vga_text_controller (
                 end else if (col >= 5 && col <= 6) begin
                     char_code = hex5_char(rs2, 1'(col - 5));
                 end
-
                 if (col >= 8 && col <= 16) begin
                     case (col - 8)
                         0: char_code = "R"; 1: char_code = "S"; 2: char_code = "2"; 3: char_code = "_"; 4: char_code = "D"; 5: char_code = "A"; 6: char_code = "T"; 7: char_code = "A"; 8: char_code = ":"; default: char_code = " ";
@@ -217,7 +196,6 @@ module vga_text_controller (
                 end else if (col >= 18 && col <= 25) begin
                     char_code = hex32_char(rs2_data, 4'(col - 18));
                 end
-
                 if (col >= 40 && col <= 42) begin
                     case (col - 40)
                         0: char_code = "R"; 1: char_code = "D"; 2: char_code = ":"; default: char_code = " ";
@@ -225,7 +203,6 @@ module vga_text_controller (
                 end else if (col >= 44 && col <= 45) begin
                     char_code = hex5_char(rd, 1'(col - 44));
                 end
-
                 if (col >= 47 && col <= 56) begin
                     case (col - 47)
                         0: char_code = "R"; 1: char_code = "E"; 2: char_code = "G"; 3: char_code = "_"; 4: char_code = "W"; 5: char_code = "R"; 6: char_code = "I"; 7: char_code = "T"; 8: char_code = "E"; 9: char_code = ":"; default: char_code = " ";
@@ -234,7 +211,6 @@ module vga_text_controller (
                     char_code = bit_char(reg_write);
                 end
             end
-
             5'd4: begin
                 if (col <= 5) begin
                     case (col)
@@ -243,7 +219,6 @@ module vga_text_controller (
                 end else if (col >= 7 && col <= 14) begin
                     char_code = hex32_char(ALU_A, 4'(col - 7));
                 end
-
                 if (col >= 40 && col <= 45) begin
                     case (col - 40)
                         0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "B"; 5: char_code = ":"; default: char_code = " ";
@@ -252,7 +227,6 @@ module vga_text_controller (
                     char_code = hex32_char(ALU_B, 4'(col - 47));
                 end
             end
-
             5'd5: begin
                 if (col <= 7) begin
                     case (col)
@@ -261,7 +235,6 @@ module vga_text_controller (
                 end else if (col >= 9 && col <= 16) begin
                     char_code = hex32_char(ALU_res, 4'(col - 9));
                 end
-
                 if (col >= 40 && col <= 47) begin
                     case (col - 40)
                         0: char_code = "A"; 1: char_code = "L"; 2: char_code = "U"; 3: char_code = "_"; 4: char_code = "S"; 5: char_code = "R"; 6: char_code = "C"; 7: char_code = ":"; default: char_code = " ";
@@ -270,7 +243,6 @@ module vga_text_controller (
                     char_code = bit_char(ALU_src);
                 end
             end
-
             5'd6: begin
                 if (col <= 8) begin
                     case (col)
@@ -279,7 +251,6 @@ module vga_text_controller (
                 end else if (col >= 10 && col <= 17) begin
                     char_code = hex32_char(mem_data, 4'(col - 10));
                 end
-
                 if (col >= 40 && col <= 47) begin
                     case (col - 40)
                         0: char_code = "D"; 1: char_code = "A"; 2: char_code = "T"; 3: char_code = "A"; 4: char_code = "_"; 5: char_code = "W"; 6: char_code = "R"; 7: char_code = ":"; default: char_code = " ";
@@ -288,7 +259,6 @@ module vga_text_controller (
                     char_code = hex32_char(data_wr, 4'(col - 49));
                 end
             end
-
             5'd7: begin
                 if (col <= 9) begin
                     case (col)
@@ -297,7 +267,6 @@ module vga_text_controller (
                 end else if (col == 11) begin
                     char_code = bit_char(mem_write);
                 end
-
                 if (col >= 40 && col <= 50) begin
                     case (col - 40)
                         0: char_code = "M"; 1: char_code = "E"; 2: char_code = "M"; 3: char_code = "_"; 4: char_code = "T"; 5: char_code = "O"; 6: char_code = "_"; 7: char_code = "R"; 8: char_code = "E"; 9: char_code = "G"; 10: char_code = ":"; default: char_code = " ";
@@ -306,7 +275,6 @@ module vga_text_controller (
                     char_code = bit_char(mem_to_reg);
                 end
             end
-
             5'd8: begin
                 if (col <= 12) begin
                     case (col)
@@ -315,7 +283,6 @@ module vga_text_controller (
                 end else if (col == 14) begin
                     char_code = bit_char(branch_taken);
                 end
-
                 if (col >= 40 && col <= 44) begin
                     case (col - 40)
                         0: char_code = "J"; 1: char_code = "U"; 2: char_code = "M"; 3: char_code = "P"; 4: char_code = ":"; default: char_code = " ";
@@ -324,7 +291,6 @@ module vga_text_controller (
                     char_code = bit_char(jump);
                 end
             end
-
             5'd10, 5'd11, 5'd12, 5'd13, 5'd14, 5'd15, 5'd16, 5'd17,
             5'd18, 5'd19, 5'd20, 5'd21, 5'd22, 5'd23, 5'd24, 5'd25: begin
                 logic [4:0] reg_row_idx;
@@ -332,7 +298,6 @@ module vga_text_controller (
                 reg_row_idx = row - 10;
                 left_reg = reg_row_idx * 2;
                 right_reg = reg_row_idx * 2 + 1;
-                
                 if (col <= 2) begin
                     case (col)
                         0: char_code = "x";
@@ -355,13 +320,11 @@ module vga_text_controller (
                     char_code = hex32_char(reg_file[right_reg], 4'(col - 18));
                 end
             end
-
             5'd26, 5'd27, 5'd28, 5'd29: begin
                 logic [4:0] mem_row_idx;
                 logic [6:0] base_addr;
                 mem_row_idx = row - 26;
                 base_addr = 7'd112 + mem_row_idx * 16;
-                
                 if (col <= 7) begin
                     case (col)
                         0: char_code = "D"; 1: char_code = "A"; 2: char_code = "T"; 3: char_code = "A"; 
@@ -375,12 +338,10 @@ module vga_text_controller (
                     logic [6:0] mem_addr;
                     logic [31:0] mem_word;
                     logic [1:0] byte_sel;
-                    
                     byte_idx = (col - 10) / 3;
                     mem_addr = base_addr + byte_idx;
                     mem_word = data_mem[mem_addr >> 2];
                     byte_sel = mem_addr[1:0];
-                    
                     if ((col - 10) % 3 < 2) begin
                         logic [7:0] byte_val;
                         case (byte_sel)
@@ -395,27 +356,24 @@ module vga_text_controller (
                     end
                 end
             end
-
             default: char_code = 8'h20;
         endcase
     end
-
-
-    always_comb begin
-        if (video_on) begin
+    always_ff @(posedge clk_25mhz) begin
+        if (video_on_d2) begin
             if (font_bit) begin
-                VGA_R = 8'h00;
-                VGA_G = 8'hFF;
-                VGA_B = 8'h00;
+                VGA_R <= 8'h00;
+                VGA_G <= 8'hFF;
+                VGA_B <= 8'h00;
             end else begin
-                VGA_R = 8'h00;
-                VGA_G = 8'h00;
-                VGA_B = 8'h00;
+                VGA_R <= 8'h00;
+                VGA_G <= 8'h00;
+                VGA_B <= 8'h00;
             end
         end else begin
-            VGA_R = 8'h00;
-            VGA_G = 8'h00;
-            VGA_B = 8'h00;
+            VGA_R <= 8'h00;
+            VGA_G <= 8'h00;
+            VGA_B <= 8'h00;
         end
     end
 endmodule

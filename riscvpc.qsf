@@ -88,6 +88,8 @@ set_global_assignment -name SYSTEMVERILOG_FILE src/data_memory.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/control_unit.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/imm_gen.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/branch_unit.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/forwarding_unit.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/hazard_detection_unit.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/vga_sync.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/font_rom.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/vga_text_controller.sv

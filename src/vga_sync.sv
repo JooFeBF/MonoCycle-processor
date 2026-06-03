@@ -49,12 +49,26 @@ module vga_sync (
         end
     end
 
-    assign hsync = ~(h_count_reg >= (H_DISPLAY + H_FP) && h_count_reg < (H_DISPLAY + H_FP + H_SYNC));
-    assign vsync = ~(v_count_reg >= (V_DISPLAY + V_FP) && v_count_reg < (V_DISPLAY + V_FP + V_SYNC));
-    
-    assign video_on = (h_count_reg < H_DISPLAY) && (v_count_reg < V_DISPLAY);
-    
-    assign pixel_x = h_count_reg;
-    assign pixel_y = v_count_reg;
+    logic hsync_next, vsync_next, video_on_next;
+
+    assign hsync_next    = ~(h_count_next >= (H_DISPLAY + H_FP) && h_count_next < (H_DISPLAY + H_FP + H_SYNC));
+    assign vsync_next    = ~(v_count_next >= (V_DISPLAY + V_FP) && v_count_next < (V_DISPLAY + V_FP + V_SYNC));
+    assign video_on_next = (h_count_next < H_DISPLAY) && (v_count_next < V_DISPLAY);
+
+    always_ff @(posedge clk_25mhz or negedge rst_n) begin
+        if (!rst_n) begin
+            hsync    <= 1'b1;
+            vsync    <= 1'b1;
+            video_on <= 1'b0;
+            pixel_x  <= 10'd0;
+            pixel_y  <= 10'd0;
+        end else begin
+            hsync    <= hsync_next;
+            vsync    <= vsync_next;
+            video_on <= video_on_next;
+            pixel_x  <= h_count_next;
+            pixel_y  <= v_count_next;
+        end
+    end
 
 endmodule
