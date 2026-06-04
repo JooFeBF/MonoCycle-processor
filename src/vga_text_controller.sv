@@ -352,21 +352,21 @@ module vga_text_controller (
             5'd26, 5'd27, 5'd28, 5'd29: begin
 
                 logic [4:0] mem_row_idx;
-                logic [6:0] base_addr;
+                logic [8:0] base_addr;
                 mem_row_idx = row - 26;
-                base_addr = 7'd112 + mem_row_idx * 16;
+                base_addr = 9'd448 + mem_row_idx * 16;
                 if (col <= 7) begin
                     case (col)
                         0: char_code = "D"; 1: char_code = "A"; 2: char_code = "T"; 3: char_code = "A"; 
-                        4: char_code = "["; 5: char_code = hex8_char({1'b0, base_addr}, 1'b0);
-                        6: char_code = hex8_char({1'b0, base_addr}, 1'b1); 7: char_code = "]";
+                        4: char_code = "["; 5: char_code = hex8_char(base_addr[7:0], 1'b0);
+                        6: char_code = hex8_char(base_addr[7:0], 1'b1); 7: char_code = "]";
                     endcase
                 end else if (col == 8) begin
                     char_code = ":";
                 end else if (col >= 10 && col <= 57) begin
 
                     logic [3:0] byte_idx;
-                    logic [6:0] mem_addr;
+                    logic [8:0] mem_addr;
                     logic [31:0] mem_word;
                     logic [1:0] byte_sel;
                     byte_idx = (col - 10) / 3;
